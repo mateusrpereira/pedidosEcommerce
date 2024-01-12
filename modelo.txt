@@ -1,0 +1,62 @@
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace MyEcommerce.Pedidos
+{
+    public static class DurableFunctionsOrchestrationPedidos
+    {
+        [FunctionName("DurableFunctionsOrchestrationPedidos")]
+        public static async Task<List<string>> RunOrchestrator(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var outputs = new List<string>();
+
+            // Replace "hello" with the name of your Durable Activity Function.
+            outputs.Add(await context.CallActivityAsync<string>("Funcao1", "Executando função 1"));
+            outputs.Add(await context.CallActivityAsync<string>("Funcao2", "Executando função 2"));
+            outputs.Add(await context.CallActivityAsync<string>("Funcao3", "Executando função 3"));
+
+            // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
+            return outputs;
+        }
+
+        [FunctionName("Funcao1")]
+        public static string Funcao1([ActivityTrigger] string name, ILogger log)
+        {
+            log.LogInformation("Saying hello to {name}.", name);
+            return $"Hello {name}!";
+        }
+        [FunctionName("Funcao2")]
+        public static string Funcao2([ActivityTrigger] string name, ILogger log)
+        {
+            log.LogInformation("Saying hello to {name}.", name);
+            return $"Hello {name}!";
+        }
+        [FunctionName("Funcao3")]
+        public static string Funcao3([ActivityTrigger] string name, ILogger log)
+        {
+            log.LogInformation("Saying hello to {name}.", name);
+            return $"Hello {name}!";
+        }
+
+        [FunctionName("DurableFunctionsOrchestrationPedidos_HttpStart")]
+        public static async Task<HttpResponseMessage> HttpStart(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
+            [DurableClient] IDurableOrchestrationClient starter,
+            ILogger log)
+        {
+            // Function input comes from the request content.
+            string instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationPedidos", null);
+
+            log.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+
+            return starter.CreateCheckStatusResponse(req, instanceId);
+        }
+    }
+}
